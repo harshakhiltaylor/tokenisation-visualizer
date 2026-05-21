@@ -1,5 +1,7 @@
 # Tokenizer Visualizer
 
+**Live demo → [tokenisation-visualizer-app.vercel.app](https://tokenisation-visualizer-app.vercel.app)**
+
 A Next.js + TypeScript tokenizer visualizer using **real tiktoken vocabularies** fetched live from OpenAI's CDN.
 
 ## Features
@@ -30,13 +32,13 @@ Open [http://localhost:3000](http://localhost:3000).
 
 > **Note:** The first tokenization per model fetches the vocab file from OpenAI's CDN (~1–2MB). After that it's cached in server memory for the lifetime of the process (instant on Vercel too, per serverless instance).
 
-## Deploy to Vercel
+## Deployment
 
-```bash
-npx vercel
-```
+Deployed on Vercel — [tokenisation-visualizer-app.vercel.app](https://tokenisation-visualizer-app.vercel.app)
 
-Or push to GitHub and import the repo at [vercel.com/new](https://vercel.com/new).
+To deploy your own fork:
+1. Push to GitHub
+2. Import at [vercel.com/new](https://vercel.com/new) — Vercel auto-detects Next.js, no config needed
 
 ## Project Structure
 
