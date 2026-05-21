@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ── Theme tokens ─────────────────────────────────────────── */
+:root {
+  --bg:       #f1f5f9;
+  --surface:  #ffffff;
+  --surface2: #f8fafc;
+  --border:   #e2e8f0;
+  --text:     #0f172a;
+  --muted:    #64748b;
+  --accent:   #6366f1;
+  --accent2:  #8b5cf6;
+}
+
+.dark {
+  --bg:       #0d0f16;
+  --surface:  #151720;
+  --surface2: #1c1f2e;
+  --border:   #252839;
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --accent:   #818cf8;
+  --accent2:  #a78bfa;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.25s, color 0.25s;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Custom scrollbar ─────────────────────────────────────── */
+::-webkit-scrollbar            { width: 5px; height: 5px; }
+::-webkit-scrollbar-track      { background: transparent; }
+::-webkit-scrollbar-thumb      { background: #475569; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover{ background: #64748b; }
+
+/* ── Token chip ───────────────────────────────────────────── */
+.token-chip {
+  display: inline;
+  border-radius: 3px;
+  padding: 2px 0;
+  cursor: default;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.8125rem;
+  line-height: 1.85rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  transition: filter 0.12s, outline-offset 0.12s;
+}
+.token-chip:hover {
+  filter: brightness(0.82);
+  outline: 2px solid rgba(99,102,241,0.55);
+  outline-offset: 1px;
+  border-radius: 3px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Loading dots ─────────────────────────────────────────── */
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.15; transform: scale(0.8); }
+  40%           { opacity: 1;    transform: scale(1); }
+}
+.dot-1 { animation: blink 1.2s infinite 0s; }
+.dot-2 { animation: blink 1.2s infinite 0.2s; }
+.dot-3 { animation: blink 1.2s infinite 0.4s; }
