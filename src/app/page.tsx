@@ -531,14 +531,44 @@ export default function HomePage() {
         )}
 
         {/* Footer */}
-        <div className="text-center text-[11px] text-slate-400 dark:text-slate-600 py-4
-          border-t border-slate-100 dark:border-slate-800">
-          Vocab files loaded from{' '}
-          <a href="https://openaipublic.blob.core.windows.net" target="_blank" rel="noreferrer"
-            className="underline underline-offset-2 hover:text-indigo-500 transition-colors">
-            openaipublic.blob.core.windows.net
-          </a>
-          {' '}· Built with Next.js + TypeScript · Deployable on Vercel
+        <div className="py-5 border-t border-slate-100 dark:border-slate-800 space-y-2">
+          <p className="text-center text-[11px] text-slate-400 dark:text-slate-600">
+            Vocab files loaded from{' '}
+            <a href="https://openaipublic.blob.core.windows.net" target="_blank" rel="noreferrer"
+              className="underline underline-offset-2 hover:text-indigo-500 transition-colors">
+              openaipublic.blob.core.windows.net
+            </a>
+            {' '}· Built with Next.js + TypeScript · Deployable on Vercel
+          </p>
+          <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+            <span>Made by</span>
+            <a
+              href="https://github.com/harshakhiltaylor"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 font-semibold text-slate-600 dark:text-slate-300
+                hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+            >
+              {/* GitHub icon */}
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.184 6.839 9.504.5.092.682-.217.682-.483
+                  0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462
+                  -.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832
+                  .092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688
+                  -.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0
+                  0 1 2.504.337c1.909-1.296 2.747-1.026 2.747-1.026.546 1.378.202 2.397.1 2.65.64.7 1.028 1.595
+                  1.028 2.688 0 3.848-2.338 4.695-4.566 4.944.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012
+                  2.743 0 .268.18.58.688.482C19.138 20.2 22 16.447 22 12.021 22 6.484 17.523 2 12 2z"/>
+              </svg>
+              harshakhiltaylor
+            </a>
+          </div>
         </div>
       </main>
     </div>
