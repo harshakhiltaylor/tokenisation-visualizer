@@ -3,8 +3,8 @@ import { ModelId, ModelMeta } from '@/types'
 // All vocab / merges files are served from OpenAI's public blob storage.
 // cl100k_base  → GPT-4, GPT-3.5-turbo, text-embedding-ada-002
 // o200k_base   → GPT-4o
-// p50k_base    → code-davinci-002, text-davinci-002/003  (also used by gpt-4-1106-preview alias)
-// CodeLlama    → uses its own SentencePiece vocab; we approximate with char-level BPE fallback
+// p50k_base    → code-davinci-002, text-davinci-002/003
+// CodeLlama    → uses its own SentencePiece vocab; we approximate with p50k
 
 const CDN = 'https://openaipublic.blob.core.windows.net/encodings'
 
@@ -16,6 +16,8 @@ export const MODELS: Record<ModelId, ModelMeta> = {
     vocabUrl:   `${CDN}/cl100k_base.tiktoken`,
     mergesUrl:  '',
     patternType: 'cl100k',
+    maxContextWindow: 128000,
+    vocabSize: 100277,
   },
   'o200k_base': {
     id: 'o200k_base',
@@ -24,6 +26,8 @@ export const MODELS: Record<ModelId, ModelMeta> = {
     vocabUrl:   `${CDN}/o200k_base.tiktoken`,
     mergesUrl:  '',
     patternType: 'cl100k',
+    maxContextWindow: 128000,
+    vocabSize: 200019,
   },
   'gpt-4-1106-preview': {
     id: 'gpt-4-1106-preview',
@@ -32,6 +36,8 @@ export const MODELS: Record<ModelId, ModelMeta> = {
     vocabUrl:   `${CDN}/cl100k_base.tiktoken`,
     mergesUrl:  '',
     patternType: 'cl100k',
+    maxContextWindow: 128000,
+    vocabSize: 100277,
   },
   'gpt-3.5-turbo': {
     id: 'gpt-3.5-turbo',
@@ -40,14 +46,18 @@ export const MODELS: Record<ModelId, ModelMeta> = {
     vocabUrl:   `${CDN}/cl100k_base.tiktoken`,
     mergesUrl:  '',
     patternType: 'cl100k',
+    maxContextWindow: 16385,
+    vocabSize: 100277,
   },
   'codellama': {
     id: 'codellama',
     label: 'codellama/CodeLlama-7b-hf',
     description: 'Meta CodeLlama. Uses a SentencePiece BPE vocab (32k tokens). Code-optimised.',
-    vocabUrl:   `${CDN}/p50k_base.tiktoken`,  // closest public approximation
+    vocabUrl:   `${CDN}/p50k_base.tiktoken`,
     mergesUrl:  '',
     patternType: 'codellama',
+    maxContextWindow: 16384,
+    vocabSize: 32000,
   },
 }
 

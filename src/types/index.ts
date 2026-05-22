@@ -12,6 +12,8 @@ export interface ModelMeta {
   vocabUrl: string
   mergesUrl: string
   patternType: 'cl100k' | 'p50k' | 'codellama'
+  maxContextWindow: number
+  vocabSize: number
 }
 
 export interface Token {
@@ -19,6 +21,12 @@ export interface Token {
   id: number        // token integer ID
   bytes: number[]   // raw UTF-8 bytes
   colorIndex: number
+}
+
+export interface LanguageSegment {
+  script: string
+  tokenCount: number
+  percent: number
 }
 
 export interface TokenizeResult {
@@ -30,6 +38,11 @@ export interface TokenizeResult {
   avgTokenLength: number
   modelId: ModelId
   loadedFromCache: boolean
+  singleByteTokenCount: number
+  multiByteTokenCount: number
+  rareTokenCount: number
+  longestTokenIndex: number
+  languageBreakdown: LanguageSegment[]
 }
 
 export interface TokenizeRequest {

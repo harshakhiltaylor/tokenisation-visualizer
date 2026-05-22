@@ -1,6 +1,9 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Eye, EyeOff, GitCompare, ChevronDown } from 'lucide-react'
+import {
+  Eye, EyeOff, GitCompare, ChevronDown,
+  Flame, Zap, AlignJustify, Link2, Loader2,
+} from 'lucide-react'
 import { ModelId, TokenizeResult } from '@/types'
 import { MODELS } from '@/lib/models'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -9,6 +12,12 @@ import TokenDisplay from '@/components/TokenDisplay'
 import TokenIDs from '@/components/TokenIDs'
 import StatsBar from '@/components/StatsBar'
 import ComparisonView from '@/components/ComparisonView'
+import ContextWindowBar from '@/components/ContextWindowBar'
+import VocabCoverageBar from '@/components/VocabCoverageBar'
+import LanguageBreakdown from '@/components/LanguageBreakdown'
+import FileUpload from '@/components/FileUpload'
+import HistoryPanel, { saveToHistory } from '@/components/HistoryPanel'
+import ExportShare from '@/components/ExportShare'
 
 const SAMPLES = [
   { label: 'English',    text: 'The quick brown fox jumps over the lazy dog.' },
@@ -20,19 +29,30 @@ const SAMPLES = [
 ]
 
 export default function HomePage() {
-  const [text,           setText]           = useState('')
-  const [modelId,        setModelId]        = useState<ModelId>('cl100k_base')
-  const [showWhitespace, setShowWhitespace] = useState(false)
-  const [showComparison, setShowComparison] = useState(false)
-  const [showInfo,       setShowInfo]       = useState(false)
-  const [result,         setResult]         = useState<TokenizeResult | null>(null)
-  const [loading,        setLoading]        = useState(false)
-  const [firstLoad,      setFirstLoad]      = useState(true)
-  const [error,          setError]          = useState<string | null>(null)
+  const [text,            setText]           = useState('')
+  const [modelId,         setModelId]        = useState<ModelId>('cl100k_base')
+  const [showWhitespace,  setShowWhitespace] = useState(false)
+  const [showComparison,  setShowComparison] = useState(false)
+  const [showInfo,        setShowInfo]       = useState(false)
+  const [result,          setResult]         = useState<TokenizeResult | null>(null)
+  const [loading,         setLoading]        = useState(false)
+  const [firstLoad,       setFirstLoad]      = useState(true)
+  const [error,           setError]          = useState<string | null>(null)
+
+  // New feature states
+  const [heatmap,         setHeatmap]        = useState(false)
+  const [animate,         setAnimate]        = useState(false)
+  const [showBoundary,    setShowBoundary]   = useState(false)
+  const [animKey,         setAnimKey]        = useState(0)
+  const [selectedIndex,   setSelectedIndex]  = useState<number | null>(null)
+  const [urlInput,        setUrlInput]       = useState('')
+  const [urlLoading,      setUrlLoading]     = useState(false)
+  const [urlError,        setUrlError]       = useState<string | null>(null)
 
   const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevModelRef = useRef<ModelId>(modelId)
 
+  // ── Tokenize ───────────────────────────────────────────────
   const tokenize = useCallback(async (t: string, mid: ModelId, ws: boolean) => {
     if (!t.trim()) { setResult(null); setError(null); return }
     setLoading(true)
@@ -50,23 +70,87 @@ export default function HomePage() {
       const data: TokenizeResult = await res.json()
       setResult(data)
       setFirstLoad(false)
+      if (animate) setAnimKey(k => k + 1)
+      setSelectedIndex(null)
+      // Save to history
+      saveToHistory({
+        text: t,
+        modelId: mid,
+        tokenCount: data.tokenCount,
+        timestamp: Date.now(),
+      })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [animate])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    // If model changed, tokenize immediately; otherwise debounce typing
     const delay = prevModelRef.current !== modelId ? 0 : 220
     prevModelRef.current = modelId
     debounceRef.current = setTimeout(() => tokenize(text, modelId, showWhitespace), delay)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [text, modelId, showWhitespace, tokenize])
 
+  // ── Load from share URL ────────────────────────────────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const share = params.get('share')
+    if (!share) return
+    try {
+      const decoded = JSON.parse(decodeURIComponent(escape(atob(share))))
+      if (decoded.text)    setText(decoded.text)
+      if (decoded.modelId) setModelId(decoded.modelId as ModelId)
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname)
+    } catch { /* ignore bad share links */ }
+  }, [])
+
+  // ── URL Fetch ──────────────────────────────────────────────
+  const fetchUrl = useCallback(async () => {
+    if (!urlInput.trim()) return
+    setUrlLoading(true)
+    setUrlError(null)
+    try {
+      const res = await fetch('/api/fetch-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: urlInput }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Fetch failed')
+      setText(data.text)
+      setUrlInput('')
+    } catch (e: unknown) {
+      setUrlError(e instanceof Error ? e.message : 'Could not fetch URL')
+    } finally {
+      setUrlLoading(false)
+    }
+  }, [urlInput])
+
+  // ── History restore ────────────────────────────────────────
+  const handleHistorySelect = useCallback((t: string, mid: ModelId) => {
+    setText(t)
+    setModelId(mid)
+  }, [])
+
+  // ── Token / ID click sync ──────────────────────────────────
+  const handleTokenClick = useCallback((i: number) => {
+    setSelectedIndex(prev => prev === i ? null : i)
+  }, [])
+
   const currentModel = MODELS[modelId]
+
+  // Heatmap legend items
+  const heatLegend = [
+    { cls: 'heat-1', label: '1 byte' },
+    { cls: 'heat-2', label: '2 bytes' },
+    { cls: 'heat-3', label: '3 bytes' },
+    { cls: 'heat-4', label: '4+ bytes' },
+  ]
 
   return (
     <div className="min-h-screen transition-colors duration-200"
@@ -122,6 +206,8 @@ export default function HomePage() {
             {showInfo && (
               <p className="text-xs mt-1.5 text-indigo-600 dark:text-indigo-400 leading-relaxed">
                 {currentModel.description}
+                {' '}Vocab size: <strong>{currentModel.vocabSize.toLocaleString()}</strong> tokens.
+                Context window: <strong>{(currentModel.maxContextWindow / 1000).toFixed(0)}k</strong> tokens.
               </p>
             )}
           </div>
@@ -149,7 +235,7 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* ── Two-column layout ──────────────────────────── */}
+        {/* ── Two-column layout ─────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
           {/* Left: Input */}
@@ -175,14 +261,49 @@ export default function HomePage() {
                 onChange={e => setText(e.target.value)}
                 placeholder="Type or paste text here…"
                 spellCheck={false}
-                className="w-full h-56 p-4 text-sm font-mono resize-none bg-transparent
+                className="w-full h-48 p-4 text-sm font-mono resize-none bg-transparent
                   text-slate-800 dark:text-slate-100
                   placeholder-slate-300 dark:placeholder-slate-700
                   focus:outline-none leading-relaxed"
               />
             </div>
 
-            {/* Toggle buttons */}
+            {/* File upload */}
+            <FileUpload onText={setText} />
+
+            {/* URL fetch */}
+            <div className="flex gap-2">
+              <div className="flex-1 flex items-center gap-2 px-3 rounded-xl border text-xs
+                bg-white dark:bg-slate-800
+                border-slate-200 dark:border-slate-700 focus-within:border-indigo-400 dark:focus-within:border-indigo-500
+                transition-colors">
+                <Link2 size={13} className="text-slate-400 flex-shrink-0" />
+                <input
+                  type="url"
+                  value={urlInput}
+                  onChange={e => setUrlInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && fetchUrl()}
+                  placeholder="Paste a URL to tokenize…"
+                  className="flex-1 py-2 bg-transparent text-slate-700 dark:text-slate-200
+                    placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none font-mono text-xs"
+                />
+              </div>
+              <button
+                onClick={fetchUrl}
+                disabled={urlLoading || !urlInput.trim()}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium
+                  bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-700
+                  text-white disabled:text-slate-500 transition-colors"
+              >
+                {urlLoading ? <Loader2 size={12} className="animate-spin" /> : null}
+                Fetch
+              </button>
+            </div>
+            {urlError && (
+              <p className="text-[11px] text-rose-500 dark:text-rose-400 px-1">{urlError}</p>
+            )}
+
+            {/* Toggle buttons row */}
             <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setShowWhitespace(!showWhitespace)}
@@ -193,7 +314,7 @@ export default function HomePage() {
                   }`}
               >
                 {showWhitespace ? <Eye size={13} /> : <EyeOff size={13} />}
-                Show whitespace
+                Whitespace
               </button>
 
               <button
@@ -205,9 +326,69 @@ export default function HomePage() {
                   }`}
               >
                 <GitCompare size={13} />
-                Compare models
+                Compare
+              </button>
+
+              {/* Heatmap */}
+              <button
+                onClick={() => setHeatmap(!heatmap)}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium border transition-all duration-150
+                  ${heatmap
+                    ? 'bg-rose-600 dark:bg-rose-500 text-white border-rose-600'
+                    : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-rose-300 dark:hover:border-rose-600 hover:text-rose-600 dark:hover:text-rose-400'
+                  }`}
+                title="Color tokens by byte size"
+              >
+                <Flame size={13} />
+                Heatmap
+              </button>
+
+              {/* Animate */}
+              <button
+                onClick={() => {
+                  setAnimate(!animate)
+                  if (!animate) setAnimKey(k => k + 1)
+                }}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium border transition-all duration-150
+                  ${animate
+                    ? 'bg-amber-500 dark:bg-amber-400 text-white border-amber-500'
+                    : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-600 hover:text-amber-600 dark:hover:text-amber-400'
+                  }`}
+                title="Animate tokens appearing one by one"
+              >
+                <Zap size={13} />
+                Stream
+              </button>
+
+              {/* Boundary markers */}
+              <button
+                onClick={() => setShowBoundary(!showBoundary)}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium border transition-all duration-150
+                  ${showBoundary
+                    ? 'bg-teal-600 dark:bg-teal-500 text-white border-teal-600'
+                    : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400'
+                  }`}
+                title="Show boundary markers between tokens"
+              >
+                <AlignJustify size={13} />
+                Boundaries
               </button>
             </div>
+
+            {/* Heatmap legend */}
+            {heatmap && (
+              <div className="flex items-center gap-2 flex-wrap animate-fade-in">
+                <span className="text-[10px] text-slate-400 dark:text-slate-600">Heat legend:</span>
+                {heatLegend.map(h => (
+                  <span key={h.cls} className={`text-[10px] font-mono px-2 py-0.5 rounded token-chip ${h.cls}`}>
+                    {h.label}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* History */}
+            <HistoryPanel currentModelId={modelId} onSelect={handleHistorySelect} />
           </div>
 
           {/* Right: Visualization */}
@@ -229,6 +410,24 @@ export default function HomePage() {
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 leading-none">bytes</span>
                   <span className="text-xl font-bold font-mono text-slate-700 dark:text-slate-200 leading-none mt-1">{result.byteCount}</span>
                 </div>
+                {/* Selected token info */}
+                {selectedIndex !== null && result.tokens[selectedIndex] && (
+                  <div className="flex flex-col justify-between px-3 py-2 rounded-xl border border-indigo-300 dark:border-indigo-700 animate-fade-in"
+                    style={{ background: 'var(--surface)' }}>
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-400 leading-none">selected</span>
+                    <span className="text-base font-bold font-mono text-indigo-600 dark:text-indigo-400 leading-none mt-1">
+                      #{selectedIndex + 1} · ID {result.tokens[selectedIndex].id}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Context window bar */}
+            {result && !loading && (
+              <div className="rounded-xl border px-4 py-3 animate-fade-in"
+                style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+                <ContextWindowBar tokenCount={result.tokenCount} model={currentModel} />
               </div>
             )}
 
@@ -240,11 +439,18 @@ export default function HomePage() {
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-600">
                   Token Visualization
                 </span>
-                {result && (
-                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-600">
-                    hover for details
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {result && result.longestTokenIndex >= 0 && (
+                    <span className="text-[10px] text-amber-500 dark:text-amber-400">
+                      🏆 longest: {result.tokens[result.longestTokenIndex]?.bytes.length}B
+                    </span>
+                  )}
+                  {result && (
+                    <span className="text-[10px] font-mono text-slate-400 dark:text-slate-600">
+                      {selectedIndex !== null ? `#${selectedIndex + 1} selected` : 'click to select'}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="p-4 min-h-[13rem]">
                 {error ? (
@@ -260,6 +466,13 @@ export default function HomePage() {
                     tokens={result?.tokens ?? []}
                     loading={loading}
                     firstLoad={firstLoad}
+                    heatmap={heatmap}
+                    animate={animate}
+                    showBoundary={showBoundary}
+                    longestTokenIndex={result?.longestTokenIndex ?? -1}
+                    selectedIndex={selectedIndex}
+                    onTokenClick={handleTokenClick}
+                    animationKey={animKey}
                   />
                 )}
               </div>
@@ -270,11 +483,42 @@ export default function HomePage() {
         {/* Stats */}
         {result && !error && <StatsBar result={result} />}
 
+        {/* Vocab coverage + Language breakdown */}
+        {result && !error && result.tokenCount > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+            <div className="rounded-2xl border shadow-sm p-4"
+              style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+              <VocabCoverageBar result={result} />
+            </div>
+            {result.languageBreakdown.length > 1 && (
+              <div className="rounded-2xl border shadow-sm p-4"
+                style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+                <LanguageBreakdown breakdown={result.languageBreakdown} />
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Token IDs */}
         {result && !error && result.tokens.length > 0 && (
           <div className="rounded-2xl border shadow-sm p-4 animate-fade-in"
             style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-            <TokenIDs tokens={result.tokens} />
+            <TokenIDs
+              tokens={result.tokens}
+              selectedIndex={selectedIndex}
+              onIdClick={handleTokenClick}
+            />
+          </div>
+        )}
+
+        {/* Export / Share */}
+        {result && !error && result.tokens.length > 0 && (
+          <div className="flex items-center gap-3 animate-fade-in">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-600">
+              Export &amp; Share
+            </span>
+            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+            <ExportShare result={result} text={text} />
           </div>
         )}
 

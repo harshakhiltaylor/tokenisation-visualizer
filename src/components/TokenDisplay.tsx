@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Token } from '@/types'
 import { getColorClass } from '@/lib/colors'
 
@@ -51,18 +51,51 @@ function Row({ label, value, color, mono }: { label: string; value: string; colo
   )
 }
 
+function getHeatClass(byteLen: number): string {
+  if (byteLen >= 4) return 'heat-4'
+  if (byteLen === 3) return 'heat-3'
+  if (byteLen === 2) return 'heat-2'
+  return 'heat-1'
+}
+
 interface Props {
   tokens: Token[]
   loading: boolean
   firstLoad: boolean
+  heatmap?: boolean
+  animate?: boolean
+  showBoundary?: boolean
+  longestTokenIndex?: number
+  selectedIndex?: number | null
+  onTokenClick?: (index: number) => void
+  animationKey?: number
 }
 
-export default function TokenDisplay({ tokens, loading, firstLoad }: Props) {
+export default function TokenDisplay({
+  tokens,
+  loading,
+  firstLoad,
+  heatmap = false,
+  animate = false,
+  showBoundary = false,
+  longestTokenIndex = -1,
+  selectedIndex = null,
+  onTokenClick,
+  animationKey = 0,
+}: Props) {
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
+  const selectedRef = useRef<HTMLSpanElement | null>(null)
 
   const onMove = useCallback((e: React.MouseEvent, token: Token) => {
     setTooltip({ token, x: e.clientX, y: e.clientY })
   }, [])
+
+  // Scroll selected token into view
+  useEffect(() => {
+    if (selectedRef.current) {
+      selectedRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [selectedIndex])
 
   if (loading) {
     return (
@@ -95,16 +128,38 @@ export default function TokenDisplay({ tokens, loading, firstLoad }: Props) {
   return (
     <div>
       <div className="font-mono text-sm leading-loose break-all whitespace-pre-wrap select-text">
-        {tokens.map((token, i) => (
-          <span
-            key={i}
-            className={`token-chip ${getColorClass(token.colorIndex)}`}
-            onMouseMove={e => onMove(e, token)}
-            onMouseLeave={() => setTooltip(null)}
-          >
-            {token.text}
-          </span>
-        ))}
+        {tokens.map((token, i) => {
+          const isSelected = selectedIndex === i
+          const isLongest  = longestTokenIndex === i
+
+          const colorCls = heatmap
+            ? `token-chip ${getHeatClass(token.bytes.length)}`
+            : `token-chip ${getColorClass(token.colorIndex)}`
+
+          const extraCls = [
+            animate ? 'token-animate' : '',
+            isSelected ? 'token-selected' : '',
+            isLongest && !isSelected ? 'token-longest' : '',
+          ].filter(Boolean).join(' ')
+
+          return (
+            <span
+              key={`${animationKey}-${i}`}
+              ref={isSelected ? selectedRef : undefined}
+              className={`${colorCls} ${extraCls} cursor-pointer`}
+              style={animate ? { '--i': i } as React.CSSProperties : undefined}
+              onMouseMove={e => onMove(e, token)}
+              onMouseLeave={() => setTooltip(null)}
+              onClick={() => onTokenClick?.(i)}
+              title={isLongest ? `Longest token (${token.bytes.length} bytes)` : undefined}
+            >
+              {token.text}
+              {showBoundary && i < tokens.length - 1 && (
+                <span className="token-boundary" aria-hidden />
+              )}
+            </span>
+          )
+        })}
       </div>
       {tooltip && <Tooltip {...tooltip} />}
     </div>

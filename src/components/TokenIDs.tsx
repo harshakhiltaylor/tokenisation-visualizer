@@ -1,13 +1,18 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { Token } from '@/types'
 import { getColorClass } from '@/lib/colors'
 
-interface Props { tokens: Token[] }
+interface Props {
+  tokens: Token[]
+  selectedIndex?: number | null
+  onIdClick?: (index: number) => void
+}
 
-export default function TokenIDs({ tokens }: Props) {
+export default function TokenIDs({ tokens, selectedIndex = null, onIdClick }: Props) {
   const [copied, setCopied] = useState(false)
+  const selectedRef = useRef<HTMLButtonElement | null>(null)
 
   const copy = async () => {
     const ids = tokens.map(t => t.id).join(', ')
@@ -15,6 +20,13 @@ export default function TokenIDs({ tokens }: Props) {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+
+  // Scroll highlighted ID into view
+  useEffect(() => {
+    if (selectedRef.current) {
+      selectedRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [selectedIndex])
 
   if (tokens.length === 0) return null
 
@@ -45,16 +57,26 @@ export default function TokenIDs({ tokens }: Props) {
         p-3 rounded-xl
         bg-white dark:bg-slate-800/40
         border border-slate-200 dark:border-slate-700">
-        {tokens.map((t, i) => (
-          <span
-            key={i}
-            title={`"${t.text.replace(/·/g,' ')}"`}
-            className={`font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded cursor-default
-              ${getColorClass(t.colorIndex)}`}
-          >
-            {t.id}
-          </span>
-        ))}
+        {tokens.map((t, i) => {
+          const isSelected = selectedIndex === i
+          return (
+            <button
+              key={i}
+              ref={isSelected ? selectedRef : undefined}
+              onClick={() => onIdClick?.(i)}
+              title={`"${t.text.replace(/·/g,' ')}" → ID ${t.id}`}
+              className={`font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded cursor-pointer
+                transition-all duration-100
+                ${getColorClass(t.colorIndex)}
+                ${isSelected
+                  ? 'ring-2 ring-indigo-500 ring-offset-1 ring-offset-white dark:ring-offset-slate-800 scale-110 z-10'
+                  : 'hover:scale-105 hover:z-10'
+                }`}
+            >
+              {t.id}
+            </button>
+          )
+        })}
       </div>
     </div>
   )
