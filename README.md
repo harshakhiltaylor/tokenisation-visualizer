@@ -6,9 +6,9 @@ A Next.js + TypeScript tokenizer visualizer using **real tiktoken vocabularies**
 
 ---
 
-## ✨ Features
+## Features
 
-### 🤖 Models
+### Models
 Supports **5 real tokenizer models** with actual vocab files from `openaipublic.blob.core.windows.net`:
 
 | Model | Used By | Vocab Size | Context Window |
@@ -21,19 +21,19 @@ Supports **5 real tokenizer models** with actual vocab files from `openaipublic.
 
 ---
 
-### 🎨 Visualization & Display
+### Visualization & Display
 
 - **Colored token highlighting** — 20 distinct colors cycle through tokens
-- **Token heatmap** 🔥 — toggle heatmap mode where color intensity reflects byte size (green=1B → red=4B+), with a live legend
+- **Token heatmap**  — toggle heatmap mode where color intensity reflects byte size (green=1B → red=4B+), with a live legend
 - **Streaming animation** ⚡ — tokens appear one-by-one with staggered fade-in, simulating LLM streaming output
 - **Click-to-highlight** — click any token chip to highlight its corresponding ID in the list (and vice versa), with bidirectional scroll-into-view
 - **Token boundary markers** — toggle thin vertical dividers between every token boundary
-- **Longest token finder** 🏆 — the single longest token (by byte count) is highlighted with a gold glow and shown in the panel header
+- **Longest token finder**  — the single longest token (by byte count) is highlighted with a gold glow and shown in the panel header
 - **Hover tooltip** — shows token ID, byte count, hex bytes, and decimal bytes on hover
 
 ---
 
-### 📊 Analysis & Stats
+### Analysis & Stats
 
 - **Token statistics** — count, characters, bytes, chars/token, bytes/token
 - **Context window usage bar** — visual gradient progress bar showing `N / max_context` tokens used (green → amber → red), with percentage and tick marks
@@ -45,7 +45,7 @@ Supports **5 real tokenizer models** with actual vocab files from `openaipublic.
 
 ---
 
-### 📥 Input & Output
+### Input & Output
 
 - **File upload** — drag-and-drop or browse `.txt`, `.py`, `.md`, `.json`, `.ts`, `.tsx`, `.js`, `.csv`, `.yaml`, `.xml`, `.html` (max 500 KB)
 - **URL fetch** — paste any URL and the server fetches + strips HTML to plain text for tokenization (CORS-safe, server-side proxy)
@@ -57,7 +57,7 @@ Supports **5 real tokenizer models** with actual vocab files from `openaipublic.
 
 ---
 
-### 🕓 History
+### History
 
 - **Last 10 inputs** stored in `localStorage` — collapsible panel shows text preview, model, token count, and timestamp
 - Click any history entry to instantly restore text + model
@@ -65,13 +65,13 @@ Supports **5 real tokenizer models** with actual vocab files from `openaipublic.
 
 ---
 
-### 🔄 Comparison
+### Comparison
 
 - **Side-by-side model comparison** — pick any two models and see how the same text tokenizes differently, with per-model stats
 
 ---
 
-### 🌓 Theme
+### Theme
 
 - **Dark / Light mode** with system preference detection and no flash on load
 
